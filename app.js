@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // DOM Elements
   const boardGrid = document.getElementById('board-grid');
   const turnText = document.getElementById('turn-text');
+  const turnDot = document.querySelector('.turn-dot');
   const roundIndicator = document.getElementById('round-indicator');
   const cardPlayer = document.getElementById('card-player');
   const cardComputer = document.getElementById('card-computer');
@@ -36,6 +37,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const mainNewGameBtn = document.getElementById('main-new-game-btn');
   const themeBtns = document.querySelectorAll('.theme-btn');
   const orientationRadios = document.querySelectorAll('input[name="wall-orientation"]');
+  const wallControlsPanel = document.getElementById('wall-controls-panel');
+  const wallModeTag = document.getElementById('wall-mode-tag');
 
   // Game State
   const gameState = {
@@ -761,6 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
           pip.className = 'wall-pip empty';
         }
       });
+      playerWallBars.setAttribute('aria-label', `${gameState.playerWalls} of 10 walls remaining`);
     }
 
     // Update Computer Wall Pips
@@ -773,12 +777,54 @@ document.addEventListener('DOMContentLoaded', () => {
           pip.className = 'wall-pip empty';
         }
       });
+      computerWallBars.setAttribute('aria-label', `${gameState.computerWalls} of 10 walls remaining`);
     }
+
+    // Update wall controls panel state
+    updateWallControlsState();
+  }
+
+  function updateWallControlsState() {
+    const canPlace = gameState.currentTurn === 'player' && gameState.playerWalls > 0 && gameState.winner === null;
+
+    if (wallControlsPanel) {
+      if (canPlace) {
+        wallControlsPanel.classList.remove('is-disabled');
+      } else {
+        wallControlsPanel.classList.add('is-disabled');
+      }
+    }
+
+    if (wallModeTag) {
+      if (gameState.winner !== null) {
+        wallModeTag.textContent = 'Game Over';
+      } else if (gameState.currentTurn !== 'player') {
+        wallModeTag.textContent = 'Waiting';
+      } else if (gameState.playerWalls <= 0) {
+        wallModeTag.textContent = 'No Walls';
+      } else {
+        wallModeTag.textContent = 'Active';
+      }
+    }
+
+    orientationRadios.forEach(radio => {
+      radio.disabled = !canPlace;
+    });
   }
 
   function updateStatusUI(state) {
     if (roundIndicator) {
       roundIndicator.textContent = `Turn ${gameState.turnNumber}`;
+    }
+
+    // Update turn dot color
+    if (turnDot) {
+      turnDot.classList.remove('player-dot', 'computer-dot');
+      if (state === 'computer-thinking') {
+        turnDot.classList.add('computer-dot');
+      } else {
+        turnDot.classList.add('player-dot');
+      }
     }
 
     if (state === 'player-turn') {
@@ -801,7 +847,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } else if (state === 'computer-thinking') {
       if (turnText) {
-        turnText.innerHTML = `<strong>Computer's turn</strong> — Comparing shortest paths & strategies...`;
+        turnText.innerHTML = `<strong>Computer's turn</strong> — Thinking...`;
       }
       cardPlayer?.classList.remove('active-player');
       cardComputer?.classList.add('active-player');
@@ -842,6 +888,9 @@ document.addEventListener('DOMContentLoaded', () => {
         pillComputer.className = 'turn-pill';
       }
     }
+
+    // Update wall controls state whenever status changes
+    updateWallControlsState();
   }
 
   function addPlayerHistoryEntry(turnNum, notation) {
