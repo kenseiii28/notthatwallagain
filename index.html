@@ -17,12 +17,31 @@
         <span class="header-subtitle">Classic Board Game</span>
       </div>
       <div class="header-actions">
+        <!-- Difficulty Selector -->
+        <div class="difficulty-switcher" role="group" aria-label="Difficulty Level">
+          <button type="button" class="difficulty-btn" data-difficulty="easy" title="Easy difficulty" aria-pressed="false">Easy</button>
+          <button type="button" class="difficulty-btn active" data-difficulty="medium" title="Medium difficulty" aria-pressed="true">Medium</button>
+          <button type="button" class="difficulty-btn" data-difficulty="hard" title="Hard difficulty" aria-pressed="false">Hard</button>
+        </div>
         <!-- Theme Mode Indicator / Selector -->
         <div class="theme-switcher" role="group" aria-label="Color Theme">
           <button type="button" class="theme-btn active" data-theme="auto" title="Follow system theme (Auto)" aria-pressed="true">Auto</button>
           <button type="button" class="theme-btn" data-theme="light" title="Light theme" aria-pressed="false">Light</button>
           <button type="button" class="theme-btn" data-theme="dark" title="Dark theme" aria-pressed="false">Dark</button>
         </div>
+        <!-- Sound Toggle -->
+        <button type="button" id="sound-toggle-btn" class="btn btn-secondary btn-sm" aria-label="Toggle sound effects" aria-pressed="true" title="Sound effects on">
+          <svg id="sound-icon-on" class="btn-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M11.536 14.01A8.47 8.47 0 0 0 14.026 8a8.47 8.47 0 0 0-2.49-6.01l-.708.707A7.48 7.48 0 0 1 13.026 8c0 2.071-.84 3.946-2.198 5.303l.708.707z"/>
+            <path d="M10.121 12.596A6.48 6.48 0 0 0 12.026 8a6.48 6.48 0 0 0-1.905-4.596l-.707.708A5.48 5.48 0 0 1 11.026 8a5.48 5.48 0 0 1-1.612 3.888l.707.708z"/>
+            <path d="M8.707 11.182A4.49 4.49 0 0 0 10.026 8a4.49 4.49 0 0 0-1.319-3.182l-.707.707A3.49 3.49 0 0 1 9.026 8a3.49 3.49 0 0 1-1.026 2.475l.707.707z"/>
+            <path d="M6.717 3.55A.5.5 0 0 1 7.026 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.526a.5.5 0 0 1-.5-.5V6a.5.5 0 0 1 .5-.5h2.299l2.389-1.89a.5.5 0 0 1 .503-.06z"/>
+          </svg>
+          <svg id="sound-icon-off" class="btn-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" style="display:none">
+            <path d="M6.717 3.55A.5.5 0 0 1 7.026 4v8a.5.5 0 0 1-.812.39L3.825 10.5H1.526a.5.5 0 0 1-.5-.5V6a.5.5 0 0 1 .5-.5h2.299l2.389-1.89a.5.5 0 0 1 .503-.06z"/>
+            <path d="M10.707 8l1.647-1.646a.5.5 0 0 0-.708-.708L10 7.293 8.354 5.646a.5.5 0 1 0-.708.708L9.293 8l-1.647 1.646a.5.5 0 0 0 .708.708L10 8.707l1.646 1.647a.5.5 0 0 0 .708-.708L10.707 8z"/>
+          </svg>
+        </button>
         <button type="button" id="top-new-game-btn" class="btn btn-secondary btn-sm" aria-label="Start new game">
           <svg class="btn-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.418A6 6 0 1 1 8 2v1z"/>
@@ -150,7 +169,7 @@
               <div class="player-identity">
                 <span class="player-piece-indicator computer-theme" aria-hidden="true"></span>
                 <div>
-                  <div class="player-name">Computer <span class="badge-role muted">AI</span></div>
+                  <div class="player-name">Computer <span class="badge-role muted" id="ai-difficulty-badge">Medium</span></div>
                   <div class="player-subtext">Goal: Row 1 (South)</div>
                 </div>
               </div>

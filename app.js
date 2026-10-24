@@ -6,10 +6,11 @@
  * - Legal pawn movement with orthogonal steps and straight/diagonal opponent jumps
  * - Wall collision detection (walls block pawn steps and jumps)
  * - Complete legal wall placement rules (no overlaps, no crossings, never traps either player)
- * - Intelligent Computer strategy:
- *   - Uses BFS shortest-path search to compare paths for both players
- *   - Moves toward its goal (Row 8)
- *   - Places legal walls when doing so meaningfully slows the player without making its own route too long
+ * - Three difficulty levels:
+ *   - Easy: moves along shortest path, rarely places walls
+ *   - Medium: compares shortest paths and places useful walls when appropriate
+ *   - Hard: evaluates walls more carefully, chooses position-improving moves with bounded search
+ * - Web Audio API sound effects (pawn move, wall place, win, lose)
  * - Interactive player wall placement with real-time hover previews
  * - Real-time turn indicator, wall inventory counters/pips, and algebraic move history
  */
@@ -39,8 +40,94 @@ document.addEventListener('DOMContentLoaded', () => {
   const orientationRadios = document.querySelectorAll('input[name="wall-orientation"]');
   const wallControlsPanel = document.getElementById('wall-controls-panel');
   const wallModeTag = document.getElementById('wall-mode-tag');
+  const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+  const aiDifficultyBadge = document.getElementById('ai-difficulty-badge');
+  const soundToggleBtn = document.getElementById('sound-toggle-btn');
+  const soundIconOn = document.getElementById('sound-icon-on');
+  const soundIconOff = document.getElementById('sound-icon-off');
 
-  // Game State
+  // =========================================================================
+  // WEB AUDIO API — SOUND EFFECTS ENGINE
+  // =========================================================================
+
+  const soundEngine = {
+    ctx: null,
+    enabled: true,
+    initialized: false,
+
+    /** Lazily create AudioContext on first user gesture to comply with autoplay policy */
+    init() {
+      if (this.initialized) return;
+      try {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.initialized = true;
+      } catch (e) {
+        // Web Audio not available — sounds silently disabled
+        this.enabled = false;
+      }
+    },
+
+    /** Resume context if suspended (browsers suspend until gesture) */
+    resume() {
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+    },
+
+    /** Play a short tone. freq in Hz, duration in seconds, type = oscillator waveform */
+    _tone(freq, duration, type, volume, startDelay) {
+      if (!this.enabled || !this.ctx) return;
+      this.resume();
+      const t = this.ctx.currentTime + (startDelay || 0);
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(volume, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + duration);
+    },
+
+    /** Pawn move: quick, soft click/tap */
+    playMove() {
+      this._tone(660, 0.08, 'sine', 0.12, 0);
+      this._tone(880, 0.06, 'sine', 0.06, 0.03);
+    },
+
+    /** Wall placement: deeper thud with resonance */
+    playWall() {
+      this._tone(180, 0.15, 'triangle', 0.15, 0);
+      this._tone(120, 0.12, 'sine', 0.08, 0.04);
+    },
+
+    /** Win: ascending major arpeggio */
+    playWin() {
+      this._tone(523, 0.18, 'sine', 0.12, 0);     // C5
+      this._tone(659, 0.18, 'sine', 0.12, 0.12);   // E5
+      this._tone(784, 0.18, 'sine', 0.12, 0.24);   // G5
+      this._tone(1047, 0.30, 'sine', 0.14, 0.36);  // C6
+    },
+
+    /** Lose: descending minor sequence */
+    playLose() {
+      this._tone(440, 0.20, 'sine', 0.10, 0);      // A4
+      this._tone(392, 0.20, 'sine', 0.10, 0.15);   // G4
+      this._tone(330, 0.20, 'sine', 0.08, 0.30);   // E4
+      this._tone(262, 0.35, 'sine', 0.06, 0.45);   // C4
+    },
+
+    toggle() {
+      this.enabled = !this.enabled;
+    }
+  };
+
+  // =========================================================================
+  // GAME STATE
+  // =========================================================================
+
   const gameState = {
     // Player starts at E1 (Row 8, Col 4). Goal: Row 0 (Rank 9)
     playerPos: { row: 8, col: 4 },
@@ -54,7 +141,8 @@ document.addEventListener('DOMContentLoaded', () => {
     winner: null, // null | 'player' | 'computer'
     history: [],
     computerThinking: false,
-    selectedWallOrientation: 'horizontal' // 'horizontal' | 'vertical'
+    selectedWallOrientation: 'horizontal', // 'horizontal' | 'vertical'
+    difficulty: 'medium' // 'easy' | 'medium' | 'hard'
   };
 
   let currentFocusedCell = { row: 8, col: 4 };
@@ -260,61 +348,124 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================================
-  // COMPUTER STRATEGY (BFS PATH COMPARISON & STRATEGIC WALLS)
+  // COMPUTER STRATEGY — DIFFICULTY LEVELS
   // =========================================================================
 
   /**
-   * Decide Computer's best action:
-   * - Move toward its goal, OR
-   * - Place a legal wall when doing so meaningfully slows the player without
-   *   making its own route too long.
+   * EASY AI: Move along shortest path. Rarely and simply place walls.
+   * - 90% of the time just moves toward goal
+   * - 10% chance to place a wall, but only if it slows player by ≥2 and doesn't slow self at all
+   * - Limited search: only checks walls near the player's current position
    */
-  function chooseComputerAction() {
-    const currentCompDist = getShortestPathDistance(
-      gameState.computerPos,
-      gameState.playerPos,
-      8,
-      gameState.placedWalls
-    );
-    const currentPlayerDist = getShortestPathDistance(
-      gameState.playerPos,
-      gameState.computerPos,
-      0,
-      gameState.placedWalls
-    );
-
-    // 1. Evaluate best pawn move
+  function chooseComputerActionEasy() {
     const legalPawnMoves = getLegalPawnMoves(
       gameState.computerPos,
       gameState.playerPos,
       gameState.placedWalls
+    );
+
+    // Immediate win takes absolute priority
+    for (let i = 0; i < legalPawnMoves.length; i++) {
+      if (legalPawnMoves[i].row === 8) {
+        return { type: 'move', move: legalPawnMoves[i] };
+      }
+    }
+
+    // 10% wall chance if walls available
+    if (gameState.computerWalls > 0 && Math.random() < 0.10) {
+      const currentPlayerDist = getShortestPathDistance(
+        gameState.playerPos, gameState.computerPos, 0, gameState.placedWalls
+      );
+      const currentCompDist = getShortestPathDistance(
+        gameState.computerPos, gameState.playerPos, 8, gameState.placedWalls
+      );
+
+      // Only search near the player's position (±2 rows/cols) to keep it simple
+      const pr = gameState.playerPos.row;
+      const pc = gameState.playerPos.col;
+      const orientations = ['horizontal', 'vertical'];
+      let bestWall = null;
+      let bestSlow = 0;
+
+      for (let r = Math.max(0, pr - 2); r <= Math.min(7, pr + 1); r++) {
+        for (let c = Math.max(0, pc - 2); c <= Math.min(7, pc + 1); c++) {
+          for (let o = 0; o < 2; o++) {
+            const candidate = { type: orientations[o], row: r, col: c };
+            if (isWallOverlap(candidate, gameState.placedWalls)) continue;
+
+            const testWalls = gameState.placedWalls.concat(candidate);
+            const newCompDist = getShortestPathDistance(
+              gameState.computerPos, gameState.playerPos, 8, testWalls
+            );
+            if (newCompDist === Infinity || newCompDist > currentCompDist) continue; // Don't slow self at all
+
+            const newPlayerDist = getShortestPathDistance(
+              gameState.playerPos, gameState.computerPos, 0, testWalls
+            );
+            if (newPlayerDist === Infinity) continue;
+
+            const playerSlow = newPlayerDist - currentPlayerDist;
+            if (playerSlow >= 2 && playerSlow > bestSlow) {
+              bestSlow = playerSlow;
+              bestWall = candidate;
+            }
+          }
+        }
+      }
+
+      if (bestWall) {
+        return { type: 'wall', wall: bestWall };
+      }
+    }
+
+    // Move pawn toward goal via shortest path
+    let bestMove = legalPawnMoves[0];
+    let bestDist = Infinity;
+
+    for (let i = 0; i < legalPawnMoves.length; i++) {
+      const move = legalPawnMoves[i];
+      const dist = getShortestPathDistance(move, gameState.playerPos, 8, gameState.placedWalls);
+      if (dist < bestDist || (dist === bestDist && move.row > bestMove.row)) {
+        bestDist = dist;
+        bestMove = move;
+      }
+    }
+
+    return { type: 'move', move: bestMove };
+  }
+
+  /**
+   * MEDIUM AI: Compare shortest paths and place useful walls when appropriate.
+   * This is the original strategy from the existing codebase.
+   */
+  function chooseComputerActionMedium() {
+    const currentCompDist = getShortestPathDistance(
+      gameState.computerPos, gameState.playerPos, 8, gameState.placedWalls
+    );
+    const currentPlayerDist = getShortestPathDistance(
+      gameState.playerPos, gameState.computerPos, 0, gameState.placedWalls
+    );
+
+    // 1. Evaluate best pawn move
+    const legalPawnMoves = getLegalPawnMoves(
+      gameState.computerPos, gameState.playerPos, gameState.placedWalls
     );
     let bestPawnMove = null;
     let minCompMoveDist = Infinity;
 
     for (let i = 0; i < legalPawnMoves.length; i++) {
       const move = legalPawnMoves[i];
-      // Immediate win takes absolute priority!
       if (move.row === 8) {
         return { type: 'move', move };
       }
-
-      const dist = getShortestPathDistance(
-        move,
-        gameState.playerPos,
-        8,
-        gameState.placedWalls
-      );
-      if (
-        dist < minCompMoveDist ||
-        (dist === minCompMoveDist && bestPawnMove && move.row > bestPawnMove.row)
-      ) {
+      const dist = getShortestPathDistance(move, gameState.playerPos, 8, gameState.placedWalls);
+      if (dist < minCompMoveDist || (dist === minCompMoveDist && bestPawnMove && move.row > bestPawnMove.row)) {
         minCompMoveDist = dist;
         bestPawnMove = move;
       }
     }
 
-    // 2. Evaluate strategic wall placement if Computer has walls remaining
+    // 2. Evaluate strategic wall placement
     let bestWallAction = null;
     let bestWallScore = -Infinity;
 
@@ -325,57 +476,34 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let c = 0; c < 8; c++) {
           for (let o = 0; o < orientations.length; o++) {
             const candidate = { type: orientations[o], row: r, col: c };
-
-            // Quick rejection of overlapping walls
             if (isWallOverlap(candidate, gameState.placedWalls)) continue;
 
             const testWalls = gameState.placedWalls.concat(candidate);
 
-            // Compute new shortest paths with candidate wall
             const newCompDist = getShortestPathDistance(
-              gameState.computerPos,
-              gameState.playerPos,
-              8,
-              testWalls
+              gameState.computerPos, gameState.playerPos, 8, testWalls
             );
-            if (newCompDist === Infinity) continue; // Traps computer
+            if (newCompDist === Infinity) continue;
 
             const newPlayerDist = getShortestPathDistance(
-              gameState.playerPos,
-              gameState.computerPos,
-              0,
-              testWalls
+              gameState.playerPos, gameState.computerPos, 0, testWalls
             );
-            if (newPlayerDist === Infinity) continue; // Traps player
+            if (newPlayerDist === Infinity) continue;
 
             const playerSlow = newPlayerDist - currentPlayerDist;
             const compSlow = newCompDist - currentCompDist;
             const netGain = playerSlow - compSlow;
 
-            // Strategy rule: A wall must meaningfully slow the player without
-            // making its own route too long:
-            // - Does not increase computer's path by more than 1 step (compSlow <= 1)
-            // - Net gain in distance is positive (netGain >= 1)
-            // - Slows the player by at least 2 steps (playerSlow >= 2) OR
-            //   if player is threatening an immediate win (currentPlayerDist <= 2) and player is slowed by >= 1 with 0 self-slow
             const isMeaningfulSlow =
               compSlow <= 1 &&
               netGain >= 1 &&
               (playerSlow >= 2 || (currentPlayerDist <= 2 && playerSlow >= 1 && compSlow === 0));
 
             if (isMeaningfulSlow) {
-              // Score based on maximizing player delay and relative lead
               const score = (playerSlow * 3) - (compSlow * 4) + (newPlayerDist - newCompDist) * 2;
               if (score > bestWallScore) {
                 bestWallScore = score;
-                bestWallAction = {
-                  type: 'wall',
-                  wall: candidate,
-                  playerSlow,
-                  compSlow,
-                  newPlayerDist,
-                  newCompDist
-                };
+                bestWallAction = { type: 'wall', wall: candidate, playerSlow, compSlow };
               }
             }
           }
@@ -383,24 +511,154 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // 3. Decide: Place Wall or Move Pawn?
-    // Place wall if:
-    // - A meaningful wall is found AND
-    // - Player is ahead in race (currentPlayerDist <= currentCompDist) OR
-    // - Player is dangerously close to winning (currentPlayerDist <= 3) OR
-    // - Wall slows player by a massive margin (playerSlow >= 3)
+    // 3. Decide
     if (bestWallAction) {
+      if (currentPlayerDist <= currentCompDist || currentPlayerDist <= 3 || bestWallAction.playerSlow >= 3) {
+        return bestWallAction;
+      }
+    }
+
+    return { type: 'move', move: bestPawnMove || legalPawnMoves[0] };
+  }
+
+  /**
+   * HARD AI: More careful wall evaluation with position scoring.
+   * - Evaluates every legal wall with a richer scoring function
+   * - Considers positional advantage (distance lead), wall economy, and defensive urgency
+   * - For pawn moves, picks the move that maximizes its positional advantage
+   * - Bounded search: still O(128 * BFS) per turn, keeps turns responsive
+   */
+  function chooseComputerActionHard() {
+    const currentCompDist = getShortestPathDistance(
+      gameState.computerPos, gameState.playerPos, 8, gameState.placedWalls
+    );
+    const currentPlayerDist = getShortestPathDistance(
+      gameState.playerPos, gameState.computerPos, 0, gameState.placedWalls
+    );
+
+    const legalPawnMoves = getLegalPawnMoves(
+      gameState.computerPos, gameState.playerPos, gameState.placedWalls
+    );
+
+    // Immediate win
+    for (let i = 0; i < legalPawnMoves.length; i++) {
+      if (legalPawnMoves[i].row === 8) {
+        return { type: 'move', move: legalPawnMoves[i] };
+      }
+    }
+
+    // Evaluate best pawn move by positional advantage (minimize own dist, maximize opponent's)
+    let bestPawnMove = null;
+    let bestPawnScore = -Infinity;
+
+    for (let i = 0; i < legalPawnMoves.length; i++) {
+      const move = legalPawnMoves[i];
+      const newCompDist = getShortestPathDistance(move, gameState.playerPos, 8, gameState.placedWalls);
+      // Score: how far ahead we are after this move
+      const score = currentPlayerDist - newCompDist;
+      if (score > bestPawnScore || (score === bestPawnScore && move.row > (bestPawnMove ? bestPawnMove.row : -1))) {
+        bestPawnScore = score;
+        bestPawnMove = move;
+      }
+    }
+
+    // Evaluate walls with richer scoring
+    let bestWallAction = null;
+    let bestWallScore = -Infinity;
+
+    if (gameState.computerWalls > 0) {
+      const orientations = ['horizontal', 'vertical'];
+      const wallBudgetFactor = gameState.computerWalls / 10; // Preserve walls when running low
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          for (let o = 0; o < 2; o++) {
+            const candidate = { type: orientations[o], row: r, col: c };
+            if (isWallOverlap(candidate, gameState.placedWalls)) continue;
+
+            const testWalls = gameState.placedWalls.concat(candidate);
+
+            const newCompDist = getShortestPathDistance(
+              gameState.computerPos, gameState.playerPos, 8, testWalls
+            );
+            if (newCompDist === Infinity) continue;
+
+            const newPlayerDist = getShortestPathDistance(
+              gameState.playerPos, gameState.computerPos, 0, testWalls
+            );
+            if (newPlayerDist === Infinity) continue;
+
+            const playerSlow = newPlayerDist - currentPlayerDist;
+            const compSlow = newCompDist - currentCompDist;
+
+            // Hard AI accepts walls that slow self by up to 2, but requires larger net gain
+            if (compSlow > 2) continue;
+            if (playerSlow < 1) continue;
+
+            // Richer scoring:
+            // - Heavy weight on net path advantage
+            // - Bonus for creating a large distance lead
+            // - Penalty for self-slow, scaled by how many walls remain
+            const netAdvantage = (newPlayerDist - newCompDist);
+            const netGain = playerSlow - compSlow;
+            const score =
+              (playerSlow * 4) -           // Reward slowing player
+              (compSlow * 5) +             // Penalize self-slow
+              (netAdvantage * 3) +         // Reward overall positional lead
+              (netGain * 2) +              // Reward net gain
+              (wallBudgetFactor * 1) -     // Slight bonus when walls are plentiful
+              (compSlow > 0 ? 2 : 0);     // Extra penalty for any self-slow
+
+            if (score > bestWallScore) {
+              bestWallScore = score;
+              bestWallAction = {
+                type: 'wall',
+                wall: candidate,
+                playerSlow,
+                compSlow,
+                score
+              };
+            }
+          }
+        }
+      }
+    }
+
+    // Decision logic — harder AI is more aggressive with walls
+    if (bestWallAction) {
+      const distLead = currentPlayerDist - currentCompDist; // positive = we're behind (player is closer)
+
+      // Place wall if:
+      // 1. Player is close to winning (urgent defense)
+      // 2. Player is ahead or tied in the race
+      // 3. Wall provides exceptional value (score >= 8)
+      // 4. We're behind and the wall helps substantially
       if (
-        currentPlayerDist <= currentCompDist ||
-        currentPlayerDist <= 3 ||
-        bestWallAction.playerSlow >= 3
+        currentPlayerDist <= 2 ||                          // Urgent: block imminent win
+        (distLead >= 0 && bestWallAction.playerSlow >= 1) ||  // Player ahead or tied
+        bestWallScore >= 8 ||                               // Exceptional wall
+        (distLead >= -1 && bestWallAction.playerSlow >= 2)  // Close race, good wall
       ) {
         return bestWallAction;
       }
     }
 
-    // Otherwise, move pawn toward goal
     return { type: 'move', move: bestPawnMove || legalPawnMoves[0] };
+  }
+
+  /**
+   * Route to the appropriate AI strategy based on current difficulty.
+   */
+  function chooseComputerAction() {
+    switch (gameState.difficulty) {
+      case 'easy':
+        return chooseComputerActionEasy();
+      case 'hard':
+        return chooseComputerActionHard();
+      case 'medium':
+      default:
+        return chooseComputerActionMedium();
+    }
   }
 
   // =========================================================================
@@ -491,15 +749,9 @@ document.addEventListener('DOMContentLoaded', () => {
       wallEl.className = `placed-wall wall-${wall.type}`;
 
       if (wall.type === 'horizontal') {
-        // Horizontal wall between row 'row' and 'row + 1'
-        // Grid track row: 2*row + 2
-        // Grid track cols: spans 2*col + 1 to 2*col + 4 (cell col, groove, cell col+1)
         wallEl.style.gridRow = `${2 * wall.row + 2}`;
         wallEl.style.gridColumn = `${2 * wall.col + 1} / ${2 * wall.col + 4}`;
       } else {
-        // Vertical wall between col 'col' and 'col + 1'
-        // Grid track col: 2*col + 2
-        // Grid track rows: spans 2*row + 1 to 2*row + 4 (cell row, groove, cell row+1)
         wallEl.style.gridRow = `${2 * wall.row + 1} / ${2 * wall.row + 4}`;
         wallEl.style.gridColumn = `${2 * wall.col + 2}`;
       }
@@ -513,7 +765,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 3. Render Interactive Wall Slots (8x8 intersection grooves)
-    // Only active during Player's turn if Player has walls remaining
     if (gameState.currentTurn === 'player' && gameState.playerWalls > 0) {
       renderWallSlots();
     }
@@ -603,6 +854,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (!moveMatch) {
+      // Invalid move — no sound
       const squareName = `${FILES[col]}${RANKS[row]}`;
       if (turnText) {
         turnText.innerHTML = `<strong>Square ${squareName}</strong> is blocked or illegal. Click a highlighted square.`;
@@ -621,12 +873,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const moveNotation = `${FILES[move.col]}${RANKS[move.row]}${move.isJump ? ' (jump)' : ''}`;
     addPlayerHistoryEntry(gameState.turnNumber, moveNotation);
 
+    // Sound: pawn move
+    soundEngine.playMove();
+
     // Check Victory Condition
     if (gameState.playerPos.row === 0) {
       gameState.currentTurn = 'gameover';
       gameState.winner = 'player';
       renderBoard();
       updateStatusUI('victory');
+      soundEngine.playWin();
       return;
     }
 
@@ -647,6 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (gameState.playerWalls <= 0) {
+      // No sound for invalid action
       if (turnText) {
         turnText.innerHTML = `<strong>No walls remaining!</strong> You must move your pawn.`;
       }
@@ -658,6 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Validate legality
     if (!isLegalWallPlacement(candidate, gameState.placedWalls, gameState.playerPos, gameState.computerPos)) {
+      // No sound for invalid action
       if (isWallOverlap(candidate, gameState.placedWalls)) {
         if (turnText) {
           turnText.innerHTML = `<strong>Illegal wall:</strong> Overlaps or crosses an existing wall.`;
@@ -681,6 +939,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateWallInventoryUI();
 
+    // Sound: wall placement
+    soundEngine.playWall();
+
     // Switch to Computer Turn
     gameState.currentTurn = 'computer';
     gameState.computerThinking = true;
@@ -702,7 +963,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const action = chooseComputerAction();
 
     if (action.type === 'wall') {
-      // Computer executes a strategic wall placement!
+      // Computer executes a strategic wall placement
       const wall = action.wall;
       gameState.placedWalls.push(wall);
       gameState.computerWalls -= 1;
@@ -712,7 +973,9 @@ document.addEventListener('DOMContentLoaded', () => {
       addComputerHistoryEntry(gameState.turnNumber, wallNotation);
       updateWallInventoryUI();
 
-      // Check if game is not over, proceed to player turn
+      // Sound: wall placement
+      soundEngine.playWall();
+
       gameState.turnNumber += 1;
       gameState.currentTurn = 'player';
       renderBoard();
@@ -726,12 +989,16 @@ document.addEventListener('DOMContentLoaded', () => {
       const moveNotation = `${FILES[move.col]}${RANKS[move.row]}${move.isJump ? ' (jump)' : ''}`;
       addComputerHistoryEntry(gameState.turnNumber, moveNotation);
 
+      // Sound: pawn move
+      soundEngine.playMove();
+
       // Check Victory Condition
       if (gameState.computerPos.row === 8) {
         gameState.currentTurn = 'gameover';
         gameState.winner = 'computer';
         renderBoard();
         updateStatusUI('defeat');
+        soundEngine.playLose();
         return;
       }
 
@@ -1012,7 +1279,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // =========================================================================
-  // CONTROLS INITIALIZATION (RESET, THEMES, WALL ORIENTATION)
+  // CONTROLS INITIALIZATION (RESET, THEMES, DIFFICULTY, SOUND, WALL ORIENT.)
   // =========================================================================
 
   function resetGame() {
@@ -1067,6 +1334,51 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function initDifficultySwitcher() {
+    difficultyBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Initialize audio on first user interaction
+        soundEngine.init();
+
+        const newDifficulty = btn.dataset.difficulty;
+
+        difficultyBtns.forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+
+        gameState.difficulty = newDifficulty;
+
+        // Update the badge on the Computer card
+        if (aiDifficultyBadge) {
+          aiDifficultyBadge.textContent = newDifficulty.charAt(0).toUpperCase() + newDifficulty.slice(1);
+        }
+
+        // Changing difficulty mid-game: apply immediately, don't reset
+        // The next computer turn will use the new difficulty
+      });
+    });
+  }
+
+  function initSoundToggle() {
+    if (soundToggleBtn) {
+      soundToggleBtn.addEventListener('click', () => {
+        // Initialize audio on first interaction
+        soundEngine.init();
+        soundEngine.toggle();
+
+        const isOn = soundEngine.enabled;
+        soundToggleBtn.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+        soundToggleBtn.title = isOn ? 'Sound effects on' : 'Sound effects off';
+
+        if (soundIconOn) soundIconOn.style.display = isOn ? '' : 'none';
+        if (soundIconOff) soundIconOff.style.display = isOn ? 'none' : '';
+      });
+    }
+  }
+
   function initWallOrientationControls() {
     orientationRadios.forEach(radio => {
       radio.addEventListener('change', (e) => {
@@ -1075,9 +1387,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Initialize audio context on any first user interaction with the page
+  function initAudioOnInteraction() {
+    const handler = () => {
+      soundEngine.init();
+      document.removeEventListener('click', handler);
+      document.removeEventListener('keydown', handler);
+    };
+    document.addEventListener('click', handler);
+    document.addEventListener('keydown', handler);
+  }
+
   // Initial Boot
   initWallOrientationControls();
   initThemeSwitcher();
+  initDifficultySwitcher();
+  initSoundToggle();
+  initAudioOnInteraction();
   resetGame();
 
   if (topNewGameBtn) topNewGameBtn.addEventListener('click', resetGame);
