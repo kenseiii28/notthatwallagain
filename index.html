@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quoridor — Board Game</title>
+  <meta name="description" content="A minimalist, accessible Quoridor board game web interface. Race your pawn across the board or place strategic walls.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Bar with Wordmark and Quick Actions -->
+    <header class="app-header">
+      <div class="header-left">
+        <span class="wordmark" aria-label="Quoridor">QUORIDOR</span>
+        <span class="header-divider" aria-hidden="true">/</span>
+        <span class="header-subtitle">Classic Board Game</span>
+      </div>
+      <div class="header-actions">
+        <!-- Theme Mode Indicator / Selector -->
+        <div class="theme-switcher" role="group" aria-label="Color Theme">
+          <button type="button" class="theme-btn active" data-theme="auto" title="Follow system theme (Auto)" aria-pressed="true">Auto</button>
+          <button type="button" class="theme-btn" data-theme="light" title="Light theme" aria-pressed="false">Light</button>
+          <button type="button" class="theme-btn" data-theme="dark" title="Dark theme" aria-pressed="false">Dark</button>
+        </div>
+        <button type="button" id="top-new-game-btn" class="btn btn-secondary btn-sm" aria-label="Start new game">
+          <svg class="btn-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.418A6 6 0 1 1 8 2v1z"/>
+            <path d="M8 0a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5H5a.5.5 0 0 1 0-1h2.5V.5A.5.5 0 0 1 8 0z"/>
+          </svg>
+          New Game
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Game Layout -->
+    <main class="game-layout">
+      <!-- Left / Center: Board Section -->
+      <section class="board-section" aria-labelledby="board-heading">
+        <h2 id="board-heading" class="visually-hidden">Game Board</h2>
+
+        <!-- Status & Turn Indicator Banner -->
+        <div class="status-banner" role="status" aria-live="polite">
+          <div class="turn-indicator">
+            <span class="turn-dot player-dot" aria-hidden="true"></span>
+            <span id="turn-text" class="turn-text"><strong>Your turn</strong> — Click a highlighted square to move</span>
+          </div>
+          <div class="turn-badge" id="round-indicator">Turn 1</div>
+        </div>
+
+        <!-- 9x9 Board Wrapper with File/Rank Coordinates -->
+        <div class="board-frame" id="board-frame">
+          <!-- Top Column Coordinate Labels (A - I) -->
+          <div class="coords coords-files-top" aria-hidden="true">
+            <span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span><span>I</span>
+          </div>
+
+          <div class="board-middle-row">
+            <!-- Left Row Coordinate Labels (9 down to 1) -->
+            <div class="coords coords-ranks-left" aria-hidden="true">
+              <span>9</span><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
+            </div>
+
+            <!-- The 9x9 Game Board Grid -->
+            <div 
+              class="board-grid" 
+              id="board-grid" 
+              role="grid" 
+              aria-label="Quoridor 9 by 9 game board"
+              tabindex="0"
+            >
+              <!-- Cells and walls dynamically generated and laid out via JS and CSS Grid -->
+            </div>
+
+            <!-- Right Row Coordinate Labels (9 down to 1) -->
+            <div class="coords coords-ranks-right" aria-hidden="true">
+              <span>9</span><span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
+            </div>
+          </div>
+
+          <!-- Bottom Column Coordinate Labels (A - I) -->
+          <div class="coords coords-files-bottom" aria-hidden="true">
+            <span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span><span>I</span>
+          </div>
+        </div>
+
+        <!-- Board Legend -->
+        <footer class="board-legend" aria-label="Board symbols legend">
+          <div class="legend-item">
+            <span class="legend-swatch player-swatch" aria-hidden="true"></span>
+            <span>You (Player)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch computer-swatch" aria-hidden="true"></span>
+            <span>Computer</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch wall-swatch" aria-hidden="true"></span>
+            <span>Placed Wall</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch hint-swatch" aria-hidden="true"></span>
+            <span>Possible Move</span>
+          </div>
+        </footer>
+      </section>
+
+      <!-- Right: Compact Side Panel -->
+      <aside class="side-panel" aria-label="Game controls and status panel">
+        <!-- Players & Wall Count Status -->
+        <div class="panel-section players-card">
+          <h3 class="panel-title">Players</h3>
+
+          <!-- Player 1 Status Card -->
+          <div class="player-card active-player" id="card-player">
+            <div class="player-card-header">
+              <div class="player-identity">
+                <span class="player-piece-indicator player-theme" aria-hidden="true"></span>
+                <div>
+                  <div class="player-name">Player <span class="badge-role">You</span></div>
+                  <div class="player-subtext">Goal: Row 9 (North)</div>
+                </div>
+              </div>
+              <span class="turn-pill" id="pill-player">Active</span>
+            </div>
+            <div class="player-walls">
+              <div class="walls-label-row">
+                <span>Remaining Walls</span>
+                <span class="walls-number" id="player-walls-count">10 / 10</span>
+              </div>
+              <div class="wall-slots-bar" aria-label="10 of 10 walls remaining" id="player-wall-bars">
+                <!-- 10 mini wall indicators -->
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Computer Status Card -->
+          <div class="player-card" id="card-computer">
+            <div class="player-card-header">
+              <div class="player-identity">
+                <span class="player-piece-indicator computer-theme" aria-hidden="true"></span>
+                <div>
+                  <div class="player-name">Computer <span class="badge-role muted">AI</span></div>
+                  <div class="player-subtext">Goal: Row 1 (South)</div>
+                </div>
+              </div>
+              <span class="turn-pill waiting" id="pill-computer">Waiting</span>
+            </div>
+            <div class="player-walls">
+              <div class="walls-label-row">
+                <span>Remaining Walls</span>
+                <span class="walls-number" id="computer-walls-count">10 / 10</span>
+              </div>
+              <div class="wall-slots-bar" aria-label="10 of 10 walls remaining" id="computer-wall-bars">
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+                <span class="wall-pip filled"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Wall Placement Controls -->
+        <div class="panel-section wall-controls-card" id="wall-controls-panel">
+          <div class="panel-section-header">
+            <h3 class="panel-title">Wall Placement</h3>
+            <span class="panel-tag" id="wall-mode-tag">Active</span>
+          </div>
+          <p class="panel-desc">Select orientation, then click a groove intersection on the board to place a wall:</p>
+          <fieldset class="wall-orientation-fieldset">
+            <legend class="visually-hidden">Wall orientation</legend>
+            <div class="orientation-toggle-group">
+              <label class="orientation-option" for="wall-dir-h">
+                <input type="radio" id="wall-dir-h" name="wall-orientation" value="horizontal" checked>
+                <span class="orientation-box">
+                  <svg class="orientation-icon" width="28" height="18" viewBox="0 0 28 18" aria-hidden="true">
+                    <rect x="2" y="7" width="24" height="4" rx="2" fill="currentColor"/>
+                    <rect x="2" y="1" width="10" height="3" rx="1" opacity="0.3" fill="currentColor"/>
+                    <rect x="16" y="1" width="10" height="3" rx="1" opacity="0.3" fill="currentColor"/>
+                    <rect x="2" y="14" width="10" height="3" rx="1" opacity="0.3" fill="currentColor"/>
+                    <rect x="16" y="14" width="10" height="3" rx="1" opacity="0.3" fill="currentColor"/>
+                  </svg>
+                  <span class="orientation-label">Horizontal</span>
+                </span>
+              </label>
+
+              <label class="orientation-option" for="wall-dir-v">
+                <input type="radio" id="wall-dir-v" name="wall-orientation" value="vertical">
+                <span class="orientation-box">
+                  <svg class="orientation-icon" width="28" height="18" viewBox="0 0 28 18" aria-hidden="true">
+                    <rect x="12" y="1" width="4" height="16" rx="2" fill="currentColor"/>
+                    <rect x="2" y="2" width="7" height="6" rx="1" opacity="0.3" fill="currentColor"/>
+                    <rect x="19" y="2" width="7" height="6" rx="1" opacity="0.3" fill="currentColor"/>
+                    <rect x="2" y="10" width="7" height="6" rx="1" opacity="0.3" fill="currentColor"/>
+                    <rect x="19" y="10" width="7" height="6" rx="1" opacity="0.3" fill="currentColor"/>
+                  </svg>
+                  <span class="orientation-label">Vertical</span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+        </div>
+
+        <!-- Move History Area -->
+        <div class="panel-section history-card">
+          <div class="panel-section-header">
+            <h3 class="panel-title">Move History</h3>
+            <span class="panel-tag" id="history-count">0 turns</span>
+          </div>
+          <div class="history-table-wrapper" tabindex="0" role="region" aria-label="Move history table">
+            <table class="history-table">
+              <thead>
+                <tr>
+                  <th scope="col" class="th-turn">#</th>
+                  <th scope="col" class="th-player">Player</th>
+                  <th scope="col" class="th-computer">Computer</th>
+                </tr>
+              </thead>
+              <tbody id="history-log">
+                <!-- Dynamically populated per turn -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Prominent New Game Action -->
+        <div class="panel-section action-card">
+          <button type="button" id="main-new-game-btn" class="btn btn-primary btn-block">
+            <svg class="btn-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.418A6 6 0 1 1 8 2v1z"/>
+              <path d="M8 0a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5H5a.5.5 0 0 1 0-1h2.5V.5A.5.5 0 0 1 8 0z"/>
+            </svg>
+            Start New Game
+          </button>
+        </div>
+
+        <!-- Unobtrusive Game Instructions -->
+        <details class="panel-section instructions-card" id="instructions-details">
+          <summary class="instructions-summary">
+            <span class="instructions-title">How to Play</span>
+            <span class="summary-chevron" aria-hidden="true">▾</span>
+          </summary>
+          <div class="instructions-content">
+            <ol class="instructions-list">
+              <li><strong>Goal:</strong> Be the first pawn to reach any square on your opponent’s baseline (opposite edge).</li>
+              <li><strong>On your turn:</strong> Either move your pawn one square (orthogonally), or place one wall.</li>
+              <li><strong>Walls:</strong> Spans two squares wide. Blocks pawns from crossing. Each player starts with 10 walls.</li>
+              <li><strong>Fairness rule:</strong> You can never place a wall that completely traps a player — at least one valid path must remain open.</li>
+            </ol>
+          </div>
+        </details>
+      </aside>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

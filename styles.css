@@ -1,0 +1,1141 @@
+/* ==========================================================================
+   Quoridor Web Game — Minimal, Calm Board Game Theme
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CSS Custom Properties (Tokens)
+   Defaults to warm off-white light theme.
+   Automatically adapts to dark theme with prefers-color-scheme,
+   with manual override class support (.theme-light / .theme-dark).
+   -------------------------------------------------------------------------- */
+:root {
+  /* Warm off-white light palette */
+  --color-bg-app: #f7f5ef;
+  --color-bg-card: #ece6da;
+  --color-bg-card-subtle: #f2ede3;
+  --color-bg-board-frame: #ded6c6;
+  --color-bg-board-groove: #cfc6b3;
+  --color-bg-cell: #fbf9f4;
+  --color-bg-cell-hover: #f1ebd8;
+  --color-bg-cell-selected: #e5ddca;
+
+  --color-text-primary: #27241e;
+  --color-text-secondary: #696357;
+  --color-text-subtle: #8e877a;
+
+  --color-border-subtle: #ded6c6;
+  --color-border-strong: #bfb5a2;
+
+  /* Restrained piece accents */
+  --color-pawn-player: #245c50;        /* Deep pine teal */
+  --color-pawn-player-glow: rgba(36, 92, 80, 0.2);
+  --color-pawn-computer: #9c4c39;      /* Subdued terracotta */
+  --color-pawn-computer-glow: rgba(156, 76, 57, 0.2);
+
+  /* Wall tones */
+  --color-wall-placed: #453c33;        /* Dark walnut wood */
+  --color-wall-preview: #877b6c;
+
+  /* Focus & Interactive */
+  --color-focus-ring: #245c50;
+  --color-btn-primary-bg: #2b2823;
+  --color-btn-primary-text: #f7f5ef;
+  --color-btn-primary-hover: #171513;
+
+  --color-btn-sec-bg: #e2dbce;
+  --color-btn-sec-text: #27241e;
+  --color-btn-sec-border: #d0c8b7;
+  --color-btn-sec-hover: #d7cfbf;
+
+  /* Sizing & Geometry */
+  --wall-channel-size: clamp(8px, 1.8vw, 12px);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Fonts */
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+
+  color-scheme: light dark;
+}
+
+/* --------------------------------------------------------------------------
+   Muted Charcoal Dark Theme
+   -------------------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root:not(.theme-light) {
+    --color-bg-app: #161719;
+    --color-bg-card: #202226;
+    --color-bg-card-subtle: #26282e;
+    --color-bg-board-frame: #2c2f35;
+    --color-bg-board-groove: #282a30;
+    --color-bg-cell: #22242a;
+    --color-bg-cell-hover: #2e3139;
+    --color-bg-cell-selected: #393d47;
+
+    --color-text-primary: #ebe7e1;
+    --color-text-secondary: #9c978e;
+    --color-text-subtle: #757168;
+
+    --color-border-subtle: #34373f;
+    --color-border-strong: #4a4e58;
+
+    /* Restrained accents for dark theme */
+    --color-pawn-player: #448f7d;
+    --color-pawn-player-glow: rgba(68, 143, 125, 0.25);
+    --color-pawn-computer: #be614c;
+    --color-pawn-computer-glow: rgba(190, 97, 76, 0.25);
+
+    --color-wall-placed: #9e9484;       /* Weathered driftwood */
+    --color-wall-preview: #635d54;
+
+    --color-focus-ring: #448f7d;
+    --color-btn-primary-bg: #ebe7e1;
+    --color-btn-primary-text: #161719;
+    --color-btn-primary-hover: #ffffff;
+
+    --color-btn-sec-bg: #2b2e35;
+    --color-btn-sec-text: #ebe7e1;
+    --color-btn-sec-border: #3b3f49;
+    --color-btn-sec-hover: #353942;
+  }
+}
+
+/* Manual class overrides for previewing */
+:root.theme-dark {
+  --color-bg-app: #161719;
+  --color-bg-card: #202226;
+  --color-bg-card-subtle: #26282e;
+  --color-bg-board-frame: #2c2f35;
+  --color-bg-board-groove: #282a30;
+  --color-bg-cell: #22242a;
+  --color-bg-cell-hover: #2e3139;
+  --color-bg-cell-selected: #393d47;
+
+  --color-text-primary: #ebe7e1;
+  --color-text-secondary: #9c978e;
+  --color-text-subtle: #757168;
+
+  --color-border-subtle: #34373f;
+  --color-border-strong: #4a4e58;
+
+  --color-pawn-player: #448f7d;
+  --color-pawn-player-glow: rgba(68, 143, 125, 0.25);
+  --color-pawn-computer: #be614c;
+  --color-pawn-computer-glow: rgba(190, 97, 76, 0.25);
+
+  --color-wall-placed: #9e9484;
+  --color-wall-preview: #635d54;
+
+  --color-focus-ring: #448f7d;
+  --color-btn-primary-bg: #ebe7e1;
+  --color-btn-primary-text: #161719;
+  --color-btn-primary-hover: #ffffff;
+
+  --color-btn-sec-bg: #2b2e35;
+  --color-btn-sec-text: #ebe7e1;
+  --color-btn-sec-border: #3b3f49;
+  --color-btn-sec-hover: #353942;
+}
+
+:root.theme-light {
+  --color-bg-app: #f7f5ef;
+  --color-bg-card: #ece6da;
+  --color-bg-card-subtle: #f2ede3;
+  --color-bg-board-frame: #ded6c6;
+  --color-bg-board-groove: #cfc6b3;
+  --color-bg-cell: #fbf9f4;
+  --color-bg-cell-hover: #f1ebd8;
+  --color-bg-cell-selected: #e5ddca;
+
+  --color-text-primary: #27241e;
+  --color-text-secondary: #696357;
+  --color-text-subtle: #8e877a;
+
+  --color-border-subtle: #ded6c6;
+  --color-border-strong: #bfb5a2;
+
+  --color-pawn-player: #245c50;
+  --color-pawn-player-glow: rgba(36, 92, 80, 0.2);
+  --color-pawn-computer: #9c4c39;
+  --color-pawn-computer-glow: rgba(156, 76, 57, 0.2);
+
+  --color-wall-placed: #453c33;
+  --color-wall-preview: #877b6c;
+
+  --color-focus-ring: #245c50;
+  --color-btn-primary-bg: #2b2823;
+  --color-btn-primary-text: #f7f5ef;
+  --color-btn-primary-hover: #171513;
+
+  --color-btn-sec-bg: #e2dbce;
+  --color-btn-sec-text: #27241e;
+  --color-btn-sec-border: #d0c8b7;
+  --color-btn-sec-hover: #d7cfbf;
+}
+
+/* --------------------------------------------------------------------------
+   Reset & Base Styles
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-family);
+  font-size: 16px;
+  line-height: 1.5;
+  background-color: var(--color-bg-app);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  background-color: var(--color-bg-app);
+  color: var(--color-text-primary);
+}
+
+/* Accessible hidden element utility */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Accessible focus styling */
+:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Container & Global Header
+   -------------------------------------------------------------------------- */
+.app-container {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2.5rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.wordmark {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--color-text-primary);
+}
+
+.header-divider {
+  color: var(--color-text-subtle);
+  font-size: 0.95rem;
+}
+
+.header-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Theme Switcher Button Group */
+.theme-switcher {
+  display: inline-flex;
+  padding: 2px;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  gap: 2px;
+}
+
+.theme-btn {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  padding: 0.2rem 0.5rem;
+  border-radius: calc(var(--radius-sm) - 1px);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.theme-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.theme-btn.active {
+  background-color: var(--color-bg-cell);
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* --------------------------------------------------------------------------
+   Buttons & Interactive Atoms
+   -------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-sm);
+}
+
+.btn-primary {
+  background-color: var(--color-btn-primary-bg);
+  color: var(--color-btn-primary-text);
+  border-color: var(--color-btn-primary-bg);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-btn-primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--color-btn-sec-bg);
+  color: var(--color-btn-sec-text);
+  border-color: var(--color-btn-sec-border);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-btn-sec-hover);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Layout: Two-Column Desktop Grid
+   -------------------------------------------------------------------------- */
+.game-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.75rem;
+  align-items: start;
+}
+
+/* --------------------------------------------------------------------------
+   Left Section: Board & Status
+   -------------------------------------------------------------------------- */
+.board-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+/* Status Banner */
+.status-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 580px;
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 1rem;
+}
+
+.turn-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.turn-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+}
+
+.turn-dot.player-dot {
+  background-color: var(--color-pawn-player);
+}
+
+.turn-dot.computer-dot {
+  background-color: var(--color-pawn-computer);
+}
+
+.turn-text {
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+}
+
+.turn-badge {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  background-color: var(--color-bg-card-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Board Frame & Coordinates
+   -------------------------------------------------------------------------- */
+.board-frame {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 580px;
+  user-select: none;
+}
+
+.coords {
+  display: flex;
+  color: var(--color-text-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.coords-files-top,
+.coords-files-bottom {
+  display: grid;
+  /* 9 equal columns matching the 9 squares */
+  grid-template-columns: repeat(9, 1fr);
+  text-align: center;
+  padding: 0.35rem 1.6rem;
+}
+
+.board-middle-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.coords-ranks-left,
+.coords-ranks-right {
+  display: grid;
+  grid-template-rows: repeat(9, 1fr);
+  height: 100%;
+  width: 1.6rem;
+  align-items: center;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   9x9 Board Grid (17x17 Tracks: 9 Cells + 8 Wall Channels)
+   -------------------------------------------------------------------------- */
+.board-grid {
+  flex: 1;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr var(--wall-channel-size)) 1fr;
+  grid-template-rows: repeat(8, 1fr var(--wall-channel-size)) 1fr;
+  background-color: var(--color-bg-board-groove);
+  border: 2px solid var(--color-bg-board-frame);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  position: relative;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Individual Board Squares (81 cells) */
+.board-cell {
+  background-color: var(--color-bg-cell);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  position: relative;
+  padding: 0;
+  transition: background-color 0.12s ease, transform 0.08s ease, border-color 0.12s ease;
+}
+
+.board-cell.is-valid-move {
+  cursor: pointer;
+}
+
+.board-cell.is-valid-move:hover {
+  background-color: var(--color-bg-cell-hover);
+}
+
+.board-cell.is-valid-move:active {
+  background-color: var(--color-bg-cell-selected);
+  transform: scale(0.98);
+}
+
+.board-cell.has-focus-target {
+  border-color: var(--color-focus-ring);
+  background-color: var(--color-bg-cell-selected);
+}
+
+/* Target Square Move Hint (Calm Dot) */
+.board-cell.is-valid-move::after {
+  content: "";
+  width: 26%;
+  height: 26%;
+  border-radius: var(--radius-full);
+  background-color: var(--color-pawn-player);
+  opacity: 0.45;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.board-cell.is-valid-move:hover::after {
+  opacity: 0.85;
+  transform: scale(1.2);
+}
+
+/* --------------------------------------------------------------------------
+   Pawns
+   Tactile, restrained game pieces
+   -------------------------------------------------------------------------- */
+.pawn {
+  width: 68%;
+  height: 68%;
+  border-radius: var(--radius-full);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Pawn Inner Ring Detail */
+.pawn::after {
+  content: "";
+  width: 44%;
+  height: 44%;
+  border-radius: var(--radius-full);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+}
+
+.pawn-player {
+  background-color: var(--color-pawn-player);
+}
+
+.pawn-computer {
+  background-color: var(--color-pawn-computer);
+}
+
+/* --------------------------------------------------------------------------
+   Placed Walls
+   Spans 2 board squares + 1 intermediate groove (3 grid tracks total)
+   -------------------------------------------------------------------------- */
+.placed-wall {
+  background-color: var(--color-wall-placed);
+  border-radius: 2px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.placed-wall.wall-horizontal {
+  height: var(--wall-channel-size);
+  align-self: center;
+}
+
+.placed-wall.wall-vertical {
+  width: var(--wall-channel-size);
+  justify-self: center;
+}
+
+/* Interactive Wall Groove Intersection Slots (8x8) */
+.wall-slot {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 6;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wall-slot::before {
+  content: "";
+  width: clamp(14px, 3vw, 22px);
+  height: clamp(14px, 3vw, 22px);
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color 0.12s ease;
+}
+
+.wall-slot:hover::before {
+  background-color: var(--color-wall-preview);
+  opacity: 0.35;
+}
+
+.wall-slot:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+/* Dynamic Wall Ghost Preview during placement hover */
+.wall-preview {
+  background-color: var(--color-wall-preview);
+  border-radius: 2px;
+  position: relative;
+  z-index: 5;
+  opacity: 0.75;
+  pointer-events: none;
+  transition: opacity 0.1s ease;
+}
+
+.wall-preview.wall-horizontal {
+  height: var(--wall-channel-size);
+  align-self: center;
+}
+
+.wall-preview.wall-vertical {
+  width: var(--wall-channel-size);
+  justify-self: center;
+}
+
+.wall-preview.invalid {
+  background-color: rgba(185, 65, 55, 0.65);
+}
+
+/* --------------------------------------------------------------------------
+   Board Legend
+   -------------------------------------------------------------------------- */
+.board-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.25rem;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  padding: 0.25rem 0.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.legend-swatch.player-swatch {
+  border-radius: var(--radius-full);
+  background-color: var(--color-pawn-player);
+}
+
+.legend-swatch.computer-swatch {
+  border-radius: var(--radius-full);
+  background-color: var(--color-pawn-computer);
+}
+
+.legend-swatch.wall-swatch {
+  background-color: var(--color-wall-placed);
+  width: 14px;
+  height: 6px;
+}
+
+.legend-swatch.hint-swatch {
+  border-radius: var(--radius-full);
+  background-color: var(--color-pawn-player);
+  opacity: 0.5;
+  width: 8px;
+  height: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Side Panel: Structure & Cards
+   -------------------------------------------------------------------------- */
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.panel-section {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.panel-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-text-primary);
+  text-transform: uppercase;
+}
+
+.panel-tag {
+  font-size: 0.6875rem;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--color-text-subtle);
+  background-color: var(--color-bg-card-subtle);
+  border: 1px solid var(--color-border-subtle);
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--radius-sm);
+}
+
+.panel-desc {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* --------------------------------------------------------------------------
+   Player Info Cards
+   -------------------------------------------------------------------------- */
+.players-card {
+  gap: 0.75rem;
+}
+
+.player-card {
+  background-color: var(--color-bg-card-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  transition: border-color 0.15s ease;
+}
+
+.player-card.active-player {
+  border-color: var(--color-border-strong);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.player-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.player-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.player-piece-indicator {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.player-piece-indicator.player-theme {
+  background-color: var(--color-pawn-player);
+}
+
+.player-piece-indicator.computer-theme {
+  background-color: var(--color-pawn-computer);
+}
+
+.player-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.badge-role {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 0.1rem 0.35rem;
+  background-color: var(--color-bg-cell);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+}
+
+.badge-role.muted {
+  opacity: 0.8;
+}
+
+.player-subtext {
+  font-size: 0.75rem;
+  color: var(--color-text-subtle);
+}
+
+.turn-pill {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-pawn-player);
+  color: #ffffff;
+}
+
+.turn-pill.waiting {
+  background-color: transparent;
+  color: var(--color-text-subtle);
+  border: 1px solid var(--color-border-subtle);
+}
+
+/* Remaining Walls Pips */
+.player-walls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.walls-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.walls-number {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.wall-slots-bar {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+  height: 6px;
+}
+
+.wall-pip {
+  background-color: var(--color-border-subtle);
+  border-radius: 1px;
+}
+
+.wall-pip.filled {
+  background-color: var(--color-wall-placed);
+}
+
+/* --------------------------------------------------------------------------
+   Wall Placement Orientation Controls
+   -------------------------------------------------------------------------- */
+.wall-orientation-fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.orientation-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.orientation-option {
+  cursor: pointer;
+  display: block;
+}
+
+.orientation-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.orientation-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background-color: var(--color-bg-card-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.5rem;
+  color: var(--color-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.orientation-option:hover .orientation-box {
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
+}
+
+.orientation-option input[type="radio"]:checked + .orientation-box {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-bg-cell);
+  color: var(--color-text-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.orientation-option input[type="radio"]:focus-visible + .orientation-box {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.orientation-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.wall-controls-card.is-disabled {
+  opacity: 0.65;
+}
+
+.wall-controls-card.is-disabled .orientation-option {
+  cursor: not-allowed;
+}
+
+.wall-controls-card.is-disabled .orientation-option:hover .orientation-box {
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Move History Table
+   -------------------------------------------------------------------------- */
+.history-table-wrapper {
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg-card-subtle);
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  text-align: left;
+}
+
+.history-table th {
+  position: sticky;
+  top: 0;
+  background-color: var(--color-bg-card);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  color: var(--color-text-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-weight: 600;
+}
+
+.history-table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+}
+
+.history-table tr:last-child td {
+  border-bottom: none;
+}
+
+.td-turn {
+  font-family: var(--font-mono);
+  color: var(--color-text-subtle);
+  width: 28px;
+}
+
+.td-move {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.td-move.pending {
+  color: var(--color-text-subtle);
+}
+
+.move-type {
+  font-size: 0.6875rem;
+  color: var(--color-text-subtle);
+  font-family: var(--font-family);
+  font-weight: 400;
+}
+
+.current-row {
+  background-color: var(--color-bg-cell);
+}
+
+.current-step {
+  color: var(--color-pawn-player);
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   Instructions (Details / Summary Accordion)
+   -------------------------------------------------------------------------- */
+.instructions-card {
+  padding: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.instructions-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.85rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  user-select: none;
+  background-color: var(--color-bg-card);
+}
+
+.instructions-summary::-webkit-details-marker {
+  display: none;
+}
+
+.instructions-summary:hover {
+  background-color: var(--color-bg-card-subtle);
+}
+
+.summary-chevron {
+  font-size: 0.8rem;
+  color: var(--color-text-subtle);
+  transition: transform 0.15s ease;
+}
+
+details[open] .summary-chevron {
+  transform: rotate(180deg);
+}
+
+.instructions-content {
+  padding: 0 1rem 1rem;
+  background-color: var(--color-bg-card);
+}
+
+.instructions-list {
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+.instructions-list strong {
+  color: var(--color-text-primary);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive Design & Narrow Screens
+   "On narrow screens, stack the panel below the board.
+    Keep the board square and usable without horizontal scrolling."
+   -------------------------------------------------------------------------- */
+@media (max-width: 860px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .side-panel {
+    max-width: 580px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .app-container {
+    padding: 0.75rem 0.75rem 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .coords-ranks-left,
+  .coords-ranks-right {
+    width: 1.1rem;
+    font-size: 0.6875rem;
+  }
+
+  .coords-files-top,
+  .coords-files-bottom {
+    padding: 0.25rem 1.1rem;
+    font-size: 0.6875rem;
+  }
+
+  .board-grid {
+    padding: 2px;
+  }
+
+  .header-subtitle {
+    display: none;
+  }
+
+  .status-banner {
+    padding: 0.5rem 0.75rem;
+  }
+}
