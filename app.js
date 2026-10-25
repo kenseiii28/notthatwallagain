@@ -45,6 +45,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const soundToggleBtn = document.getElementById('sound-toggle-btn');
   const soundIconOn = document.getElementById('sound-icon-on');
   const soundIconOff = document.getElementById('sound-icon-off');
+  const topRulesBtn = document.getElementById('top-rules-btn');
+  const rulesDialog = document.getElementById('rules-dialog');
+  const rulesDialogCloseBtn = document.getElementById('rules-dialog-close-btn');
+  const startGameBtn = document.getElementById('start-game-btn');
+  const winnerDialog = document.getElementById('winner-dialog');
+  const winnerCelebrationImg = document.getElementById('winner-celebration-img');
+  const winnerDialogTitle = document.getElementById('winner-dialog-title');
+  const winnerDialogSubtitle = document.getElementById('winner-dialog-subtitle');
+  const winnerNewGameBtn = document.getElementById('winner-new-game-btn');
+  const winnerCloseBtn = document.getElementById('winner-close-btn');
 
   // =========================================================================
   // WEB AUDIO API — SOUND EFFECTS ENGINE
@@ -142,7 +152,9 @@ document.addEventListener('DOMContentLoaded', () => {
     history: [],
     computerThinking: false,
     selectedWallOrientation: 'horizontal', // 'horizontal' | 'vertical'
-    difficulty: 'medium' // 'easy' | 'medium' | 'hard'
+    difficulty: 'medium', // 'easy' | 'medium' | 'hard'
+    gameStarted: false, // Paused until "Start Game" is clicked
+    winnerModalShown: false // Show winner popup only once per game
   };
 
   let currentFocusedCell = { row: 8, col: 4 };
@@ -672,7 +684,7 @@ document.addEventListener('DOMContentLoaded', () => {
     boardGrid.innerHTML = '';
 
     const legalPlayerMoves =
-      gameState.currentTurn === 'player'
+      (gameState.gameStarted && gameState.currentTurn === 'player' && !gameState.computerThinking)
         ? getLegalPawnMoves(gameState.playerPos, gameState.computerPos, gameState.placedWalls)
         : [];
 
@@ -765,7 +777,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 3. Render Interactive Wall Slots (8x8 intersection grooves)
-    if (gameState.currentTurn === 'player' && gameState.playerWalls > 0) {
+    if (gameState.gameStarted && gameState.currentTurn === 'player' && gameState.playerWalls > 0 && gameState.winner === null) {
       renderWallSlots();
     }
   }
@@ -847,6 +859,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================================================================
 
   function handleCellClick(row, col, moveMatch) {
+    if (!gameState.gameStarted) {
+      openRulesDialog(true);
+      return;
+    }
     updateFocus(row, col);
 
     if (gameState.currentTurn !== 'player' || gameState.computerThinking) {
@@ -883,6 +899,13 @@ document.addEventListener('DOMContentLoaded', () => {
       renderBoard();
       updateStatusUI('victory');
       soundEngine.playWin();
+
+      if (!gameState.winnerModalShown) {
+        gameState.winnerModalShown = true;
+        setTimeout(() => {
+          showWinnerDialog('You win the game!', 'You crossed the board! Not even their pettiest walls could stop you.');
+        }, 350);
+      }
       return;
     }
 
@@ -898,6 +921,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function handlePlayerPlaceWall(row, col) {
+    if (!gameState.gameStarted) {
+      openRulesDialog(true);
+      return;
+    }
     if (gameState.currentTurn !== 'player' || gameState.computerThinking) {
       return;
     }
@@ -999,6 +1026,13 @@ document.addEventListener('DOMContentLoaded', () => {
         renderBoard();
         updateStatusUI('defeat');
         soundEngine.playLose();
+
+        if (!gameState.winnerModalShown) {
+          gameState.winnerModalShown = true;
+          setTimeout(() => {
+            showWinnerDialog('Computer wins the game!', 'The computer reached the baseline first. Not that wall again...');
+          }, 350);
+        }
         return;
       }
 
@@ -1052,7 +1086,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateWallControlsState() {
-    const canPlace = gameState.currentTurn === 'player' && gameState.playerWalls > 0 && gameState.winner === null;
+    const canPlace = gameState.gameStarted && gameState.currentTurn === 'player' && gameState.playerWalls > 0 && gameState.winner === null;
 
     if (wallControlsPanel) {
       if (canPlace) {
@@ -1063,7 +1097,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (wallModeTag) {
-      if (gameState.winner !== null) {
+      if (!gameState.gameStarted) {
+        wallModeTag.textContent = 'Paused';
+      } else if (gameState.winner !== null) {
         wallModeTag.textContent = 'Game Over';
       } else if (gameState.currentTurn !== 'player') {
         wallModeTag.textContent = 'Waiting';
@@ -1080,6 +1116,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateStatusUI(state) {
+    if (!gameState.gameStarted) {
+      if (roundIndicator) {
+        roundIndicator.textContent = 'Welcome';
+      }
+      if (turnDot) {
+        turnDot.classList.remove('computer-dot');
+        turnDot.classList.add('player-dot');
+      }
+      if (turnText) {
+        turnText.innerHTML = `<strong>Welcome!</strong> Review the rules and click <strong>Start Game</strong> to begin.`;
+      }
+      cardPlayer?.classList.remove('active-player');
+      cardComputer?.classList.remove('active-player');
+      if (pillPlayer) {
+        pillPlayer.textContent = 'Ready';
+        pillPlayer.className = 'turn-pill';
+      }
+      if (pillComputer) {
+        pillComputer.textContent = 'Waiting';
+        pillComputer.className = 'turn-pill waiting';
+      }
+      updateWallControlsState();
+      return;
+    }
+
     if (roundIndicator) {
       roundIndicator.textContent = `Turn ${gameState.turnNumber}`;
     }
@@ -1282,8 +1343,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // CONTROLS INITIALIZATION (RESET, THEMES, DIFFICULTY, SOUND, WALL ORIENT.)
   // =========================================================================
 
-  function resetGame() {
+  function resetGame(autoStart = true) {
     clearWallPreview();
+    closeWinnerDialog();
+    closeRulesDialog();
+
     gameState.playerPos = { row: 8, col: 4 }; // E1
     gameState.computerPos = { row: 0, col: 4 }; // E9
     gameState.playerWalls = 10;
@@ -1294,6 +1358,8 @@ document.addEventListener('DOMContentLoaded', () => {
     gameState.winner = null;
     gameState.history = [];
     gameState.computerThinking = false;
+    gameState.winnerModalShown = false;
+    gameState.gameStarted = autoStart;
 
     currentFocusedCell = { row: 8, col: 4 };
 
@@ -1302,11 +1368,174 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateWallInventoryUI();
     renderBoard();
-    updateStatusUI('player-turn');
+    updateStatusUI(autoStart ? 'player-turn' : 'paused');
 
-    const firstCell = boardGrid.querySelector('.board-cell[data-row="8"][data-col="4"]');
-    if (firstCell) {
-      firstCell.focus();
+    if (autoStart) {
+      const firstCell = boardGrid.querySelector('.board-cell[data-row="8"][data-col="4"]');
+      if (firstCell) {
+        firstCell.focus();
+      }
+    }
+  }
+
+  // =========================================================================
+  // DIALOG / MODAL CONTROLLERS (RULES & WINNER)
+  // =========================================================================
+
+  function openRulesDialog(isInitialOpen = false) {
+    if (!rulesDialog) return;
+
+    if (startGameBtn) {
+      if (!gameState.gameStarted || isInitialOpen) {
+        startGameBtn.textContent = 'Start Game';
+      } else {
+        startGameBtn.textContent = 'Resume Game';
+      }
+    }
+
+    try {
+      if (typeof rulesDialog.showModal === 'function') {
+        if (!rulesDialog.open) {
+          rulesDialog.showModal();
+        }
+      } else {
+        rulesDialog.setAttribute('open', '');
+      }
+    } catch (err) {
+      rulesDialog.setAttribute('open', '');
+    }
+
+    if (startGameBtn) startGameBtn.focus();
+  }
+
+  function closeRulesDialog() {
+    if (!rulesDialog) return;
+    try {
+      if (typeof rulesDialog.close === 'function') {
+        if (rulesDialog.open) {
+          rulesDialog.close();
+        }
+      } else {
+        rulesDialog.removeAttribute('open');
+      }
+    } catch (err) {
+      rulesDialog.removeAttribute('open');
+    }
+  }
+
+  function showWinnerDialog(exactTitle, subtitle) {
+    if (!winnerDialog) return;
+
+    if (winnerDialogTitle) {
+      winnerDialogTitle.textContent = exactTitle;
+    }
+    if (winnerDialogSubtitle) {
+      winnerDialogSubtitle.textContent = subtitle || '';
+    }
+
+    if (winnerCelebrationImg) {
+      winnerCelebrationImg.onerror = () => {
+        winnerCelebrationImg.classList.add('is-hidden');
+      };
+      winnerCelebrationImg.onload = () => {
+        winnerCelebrationImg.classList.remove('is-hidden');
+      };
+      winnerCelebrationImg.src = 'celebration.png';
+    }
+
+    try {
+      if (typeof winnerDialog.showModal === 'function') {
+        if (!winnerDialog.open) {
+          winnerDialog.showModal();
+        }
+      } else {
+        winnerDialog.setAttribute('open', '');
+      }
+    } catch (err) {
+      winnerDialog.setAttribute('open', '');
+    }
+
+    if (winnerNewGameBtn) winnerNewGameBtn.focus();
+  }
+
+  function closeWinnerDialog() {
+    if (!winnerDialog) return;
+    try {
+      if (typeof winnerDialog.close === 'function') {
+        if (winnerDialog.open) {
+          winnerDialog.close();
+        }
+      } else {
+        winnerDialog.removeAttribute('open');
+      }
+    } catch (err) {
+      winnerDialog.removeAttribute('open');
+    }
+  }
+
+  function initDialogs() {
+    // Top-left rules button
+    if (topRulesBtn) {
+      topRulesBtn.addEventListener('click', () => {
+        openRulesDialog(false);
+      });
+    }
+
+    // Start / Resume Game button
+    if (startGameBtn) {
+      startGameBtn.addEventListener('click', () => {
+        soundEngine.init();
+        if (!gameState.gameStarted) {
+          gameState.gameStarted = true;
+          closeRulesDialog();
+          renderBoard();
+          updateStatusUI('player-turn');
+          const firstCell = boardGrid.querySelector('.board-cell[data-row="8"][data-col="4"]');
+          if (firstCell) firstCell.focus();
+        } else {
+          closeRulesDialog();
+        }
+      });
+    }
+
+    // Rules close button ('X')
+    if (rulesDialogCloseBtn) {
+      rulesDialogCloseBtn.addEventListener('click', () => {
+        if (!gameState.gameStarted) {
+          gameState.gameStarted = true;
+          closeRulesDialog();
+          renderBoard();
+          updateStatusUI('player-turn');
+        } else {
+          closeRulesDialog();
+        }
+      });
+    }
+
+    // Rules dialog native escape/cancel
+    if (rulesDialog) {
+      rulesDialog.addEventListener('cancel', () => {
+        if (!gameState.gameStarted) {
+          gameState.gameStarted = true;
+          renderBoard();
+          updateStatusUI('player-turn');
+        }
+      });
+    }
+
+    // Winner Dialog buttons
+    if (winnerNewGameBtn) {
+      winnerNewGameBtn.addEventListener('click', () => {
+        closeWinnerDialog();
+        resetGame(true);
+      });
+    }
+
+    if (winnerCloseBtn) {
+      winnerCloseBtn.addEventListener('click', () => {
+        closeWinnerDialog();
+        if (mainNewGameBtn) mainNewGameBtn.focus();
+      });
     }
   }
 
@@ -1403,9 +1632,13 @@ document.addEventListener('DOMContentLoaded', () => {
   initThemeSwitcher();
   initDifficultySwitcher();
   initSoundToggle();
+  initDialogs();
   initAudioOnInteraction();
-  resetGame();
 
-  if (topNewGameBtn) topNewGameBtn.addEventListener('click', resetGame);
-  if (mainNewGameBtn) mainNewGameBtn.addEventListener('click', resetGame);
+  // Reset to initial clean state (paused) and present Rules on first open
+  resetGame(false);
+  openRulesDialog(true);
+
+  if (topNewGameBtn) topNewGameBtn.addEventListener('click', () => resetGame(true));
+  if (mainNewGameBtn) mainNewGameBtn.addEventListener('click', () => resetGame(true));
 });

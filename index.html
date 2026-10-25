@@ -15,6 +15,13 @@
         <span class="wordmark" aria-label="Not That Wall Again">NOT THAT WALL AGAIN</span>
         <span class="header-divider" aria-hidden="true">/</span>
         <span class="header-subtitle">A Game of Spite &amp; Spatial Awareness</span>
+        <button type="button" id="top-rules-btn" class="btn btn-secondary btn-sm rules-trigger-btn" aria-haspopup="dialog" aria-controls="rules-dialog" title="View rules &amp; how to play">
+          <svg class="btn-icon" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+            <path d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"/>
+          </svg>
+          How to Play
+        </button>
       </div>
       <div class="header-actions">
         <!-- Difficulty Selector -->
@@ -289,6 +296,105 @@
       </aside>
     </main>
   </div>
+
+  <!-- Centered How to Play / Rules Dialog -->
+  <dialog id="rules-dialog" class="game-dialog rules-modal" aria-labelledby="rules-dialog-title" aria-modal="true">
+    <div class="dialog-content">
+      <div class="dialog-header">
+        <div class="dialog-title-group">
+          <span class="dialog-badge">Guide</span>
+          <h2 id="rules-dialog-title" class="dialog-title">How to Play Not That Wall Again</h2>
+        </div>
+        <button type="button" id="rules-dialog-close-btn" class="dialog-close-btn" aria-label="Close rules dialog" title="Close">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="dialog-body">
+        <p class="dialog-lead">A minimalist board game of speed, spite, and spatial navigation. Race your pawn to the opposite baseline while dropping well-timed barricades in the computer's path.</p>
+        
+        <div class="rules-grid">
+          <div class="rule-card">
+            <div class="rule-icon-box" aria-hidden="true">🎯</div>
+            <div class="rule-card-text">
+              <h3>Objective</h3>
+              <p>Be the first pawn to reach <strong>any square on the opponent's baseline</strong> (Row 9 / North for you; Row 1 / South for the computer).</p>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-icon-box" aria-hidden="true">♟️</div>
+            <div class="rule-card-text">
+              <h3>Pawn Movement</h3>
+              <p>On your turn, move your pawn <strong>one square orthogonally</strong> (North, South, East, West) to an unblocked adjacent square.</p>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-icon-box" aria-hidden="true">🦘</div>
+            <div class="rule-card-text">
+              <h3>Jumping Opponents</h3>
+              <p>When adjacent to the opponent, jump straight over them. If a wall or board edge blocks the straight jump, leap <strong>diagonally</strong> around them to an open side.</p>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-icon-box" aria-hidden="true">🧱</div>
+            <div class="rule-card-text">
+              <h3>Wall Placement</h3>
+              <p>Instead of moving, place one wall. Walls span <strong>two squares wide</strong> (horizontal or vertical) in the grooves between cells to block pawn movement.</p>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-icon-box" aria-hidden="true">🔟</div>
+            <div class="rule-card-text">
+              <h3>10-Wall Limit</h3>
+              <p>Each player begins with <strong>10 walls</strong>. Once your inventory is depleted, you may only move your pawn.</p>
+            </div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-icon-box" aria-hidden="true">⚖️</div>
+            <div class="rule-card-text">
+              <h3>The Golden Rule</h3>
+              <p><strong>Never trap a player.</strong> You cannot place a wall that completely blocks either player's path to their goal. At least one open route must always remain.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" id="start-game-btn" class="btn btn-primary btn-lg dialog-primary-btn">
+          Start Game
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Centered Winner Dialog -->
+  <dialog id="winner-dialog" class="game-dialog winner-modal" aria-labelledby="winner-dialog-title" aria-modal="true">
+    <div class="dialog-content winner-dialog-content">
+      <div class="winner-dialog-body">
+        <div class="winner-media-container" id="winner-media-container">
+          <!-- Celebration image attached by user (celebration.png) -->
+          <img id="winner-celebration-img" src="celebration.png" alt="Celebration" class="winner-celebration-img">
+        </div>
+        <h2 id="winner-dialog-title" class="winner-title"></h2>
+        <p id="winner-dialog-subtitle" class="winner-subtitle"></p>
+      </div>
+      <div class="dialog-footer winner-dialog-footer">
+        <button type="button" id="winner-new-game-btn" class="btn btn-primary btn-lg">
+          New Game
+        </button>
+        <button type="button" id="winner-close-btn" class="btn btn-secondary btn-lg">
+          Close
+        </button>
+      </div>
+    </div>
+  </dialog>
 
   <script src="app.js"></script>
 </body>
