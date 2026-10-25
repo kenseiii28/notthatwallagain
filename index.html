@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quoridor — Board Game</title>
-  <meta name="description" content="A minimalist, accessible Quoridor board game web interface. Race your pawn across the board or place strategic walls.">
+  <title>Not That Wall Again — Classic Board Strategy</title>
+  <meta name="description" content="Not That Wall Again: A delightfully tactical race across the board. Navigate your pawn, place spiteful walls, and outsmart the computer.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -12,9 +12,9 @@
     <!-- Top Bar with Wordmark and Quick Actions -->
     <header class="app-header">
       <div class="header-left">
-        <span class="wordmark" aria-label="Quoridor">QUORIDOR</span>
+        <span class="wordmark" aria-label="Not That Wall Again">NOT THAT WALL AGAIN</span>
         <span class="header-divider" aria-hidden="true">/</span>
-        <span class="header-subtitle">Classic Board Game</span>
+        <span class="header-subtitle">A Game of Spite &amp; Spatial Awareness</span>
       </div>
       <div class="header-actions">
         <!-- Difficulty Selector -->
@@ -62,7 +62,7 @@
         <div class="status-banner" role="status" aria-live="polite">
           <div class="turn-indicator">
             <span class="turn-dot player-dot" aria-hidden="true"></span>
-            <span id="turn-text" class="turn-text"><strong>Your turn</strong> — Click a highlighted square to move</span>
+            <span id="turn-text" class="turn-text"><strong>Your turn</strong> — Click a highlighted square to advance, or drop a wall in their way.</span>
           </div>
           <div class="turn-badge" id="round-indicator">Turn 1</div>
         </div>
@@ -85,7 +85,7 @@
               class="board-grid" 
               id="board-grid" 
               role="grid" 
-              aria-label="Quoridor 9 by 9 game board"
+              aria-label="Not That Wall Again 9 by 9 game board"
               tabindex="0"
             >
               <!-- Cells and walls dynamically generated and laid out via JS and CSS Grid -->
@@ -202,7 +202,7 @@
             <h3 class="panel-title">Wall Placement</h3>
             <span class="panel-tag" id="wall-mode-tag">Active</span>
           </div>
-          <p class="panel-desc">Select orientation, then click a groove intersection on the board to place a wall:</p>
+          <p class="panel-desc">Choose horizontal or vertical, then click an intersection groove to build an inconvenient detour:</p>
           <fieldset class="wall-orientation-fieldset">
             <legend class="visually-hidden">Wall orientation</legend>
             <div class="orientation-toggle-group">
@@ -278,10 +278,11 @@
           </summary>
           <div class="instructions-content">
             <ol class="instructions-list">
-              <li><strong>Goal:</strong> Be the first pawn to reach any square on your opponent’s baseline (opposite edge).</li>
-              <li><strong>On your turn:</strong> Either move your pawn one square (orthogonally), or place one wall.</li>
-              <li><strong>Walls:</strong> Spans two squares wide. Blocks pawns from crossing. Each player starts with 10 walls.</li>
-              <li><strong>Fairness rule:</strong> You can never place a wall that completely traps a player — at least one valid path must remain open.</li>
+              <li><strong>The Race:</strong> Be the first pawn to reach any square on your opponent’s baseline (opposite edge).</li>
+              <li><strong>Your Turn:</strong> Either advance your pawn one step, or place one wall to complicate their journey.</li>
+              <li><strong>Jumping Rivals:</strong> When face-to-face, jump over them! If blocked behind, hop diagonally.</li>
+              <li><strong>Wall Inventory:</strong> Each player starts with 10 walls. Each spans two spaces. Once placed, walls stay put.</li>
+              <li><strong>The Golden Rule:</strong> You cannot completely trap either player — at least one open detour must always remain.</li>
             </ol>
           </div>
         </details>

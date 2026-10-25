@@ -1,12 +1,12 @@
-# Quoridor
+# Not That Wall Again
 
 ## Project goal
 
-Build a polished, playable browser version of Quoridor for one human player against a computer opponent. Keep it simple to run and deploy as a static website.
+Build a polished, playable browser version of Not That Wall Again for one human player against a computer opponent. Keep it simple to run and deploy as a static website.
 
 ## Product experience
 
-- Show a standard 9 × 9 Quoridor board.
+- Show a standard 9 × 9 board.
 - The human starts at the center of the bottom edge and aims for the top edge. The computer starts at the center of the top edge and aims for the bottom edge.
 - Make the current turn and game status easy to understand.
 - Show each player's remaining walls and a readable move history.
@@ -50,7 +50,7 @@ Build a polished, playable browser version of Quoridor for one human player agai
 
 - A fresh game starts with pawns in the correct positions and 10 walls per player.
 - Legal moves are selectable and illegal moves do nothing.
-- Pawn jumps and diagonal bypass moves follow Quoridor rules.
+- Pawn jumps and diagonal bypass moves follow classic rules.
 - Legal walls affect pawn movement; overlapping, crossing, off-board, and path-blocking walls are rejected.
 - The computer responds with a legal move or wall placement.
 - Wall counts, turn status, and move history stay in sync.

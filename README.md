@@ -1,12 +1,12 @@
-# Quoridor
+# Not That Wall Again
 
-A browser-based Quoridor board game where you race the computer to the other side and use walls to slow it down.
+A clean, minimalist browser board game where you race the computer to the opposite baseline while dropping well-timed barricades in each other's path.
 
 ## How to Play
 
 - **Goal:** Move your pawn across the board to your opponent's baseline (row 9).
-- **Each turn:** Either move your pawn one square orthogonally, or place one wall.
-- **Jumps:** When adjacent to the opponent, jump over them. If a wall or board edge blocks the straight jump, move diagonally around them instead.
+- **Each turn:** Either advance your pawn one square orthogonally, or drop one wall to obstruct your opponent.
+- **Jumps:** When adjacent to the opponent, jump over them! If a wall or board edge blocks the straight jump, move diagonally around them instead.
 - **Walls:** Each player starts with 10 walls. Walls span two squares and block pawn movement. You cannot place a wall that completely traps either player.
 - **Win:** The first pawn to reach the opposite edge wins.
 

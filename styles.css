@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Quoridor Web Game — Minimal, Calm Board Game Theme
+   Not That Wall Again — Minimal, Calm Board Game Theme
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -251,10 +251,11 @@ body {
 }
 
 .wordmark {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.08em;
   color: var(--color-text-primary);
+  white-space: nowrap;
 }
 
 .header-divider {
@@ -1171,6 +1172,11 @@ details[open] .summary-chevron {
 
   .board-grid {
     padding: 2px;
+  }
+
+  .wordmark {
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
   }
 
   .header-subtitle {

@@ -1,8 +1,8 @@
 /**
- * Quoridor Web Game — Strategic AI & Full Game Engine
+ * Not That Wall Again — Strategic AI & Full Game Engine
  * 
  * Features:
- * - 9x9 Quoridor board with 81 cells and 64 wall intersections (8x8)
+ * - 9x9 board with 81 cells and 64 wall intersections (8x8)
  * - Legal pawn movement with orthogonal steps and straight/diagonal opponent jumps
  * - Wall collision detection (walls block pawn steps and jumps)
  * - Complete legal wall placement rules (no overlaps, no crossings, never traps either player)
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
-   * Validate whether a candidate wall is completely legal according to Quoridor rules:
+   * Validate whether a candidate wall is completely legal:
    * 1. Coordinates within 0..7
    * 2. No physical overlap or crossing with existing walls
    * 3. Never traps either player (both must retain a path to their respective goals)
@@ -857,7 +857,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Invalid move — no sound
       const squareName = `${FILES[col]}${RANKS[row]}`;
       if (turnText) {
-        turnText.innerHTML = `<strong>Square ${squareName}</strong> is blocked or illegal. Click a highlighted square.`;
+        turnText.innerHTML = `<strong>Square ${squareName}</strong> is blocked or illegal. Click a highlighted green square.`;
       }
       return;
     }
@@ -905,7 +905,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (gameState.playerWalls <= 0) {
       // No sound for invalid action
       if (turnText) {
-        turnText.innerHTML = `<strong>No walls remaining!</strong> You must move your pawn.`;
+        turnText.innerHTML = `<strong>Out of walls!</strong> 10 is the limit — you must walk now.`;
       }
       return;
     }
@@ -918,11 +918,11 @@ document.addEventListener('DOMContentLoaded', () => {
       // No sound for invalid action
       if (isWallOverlap(candidate, gameState.placedWalls)) {
         if (turnText) {
-          turnText.innerHTML = `<strong>Illegal wall:</strong> Overlaps or crosses an existing wall.`;
+          turnText.innerHTML = `<strong>Illegal wall:</strong> That groove is occupied. No stacking walls!`;
         }
       } else {
         if (turnText) {
-          turnText.innerHTML = `<strong>Illegal wall:</strong> Cannot completely block either player's path to the goal!`;
+          turnText.innerHTML = `<strong>Illegal wall:</strong> You can't trap a player completely — fairness demands an open detour!`;
         }
       }
       return;
@@ -1098,8 +1098,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (turnText) {
         const wallHint =
           gameState.playerWalls > 0
-            ? 'move pawn or click a groove to place a wall'
-            : 'move your pawn';
+            ? 'advance your pawn or place an inconvenient wall'
+            : 'advance your pawn (out of walls!)';
         turnText.innerHTML = `<strong>Your turn</strong> — Click a highlighted square to ${wallHint}`;
       }
       cardPlayer?.classList.add('active-player');
@@ -1114,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } else if (state === 'computer-thinking') {
       if (turnText) {
-        turnText.innerHTML = `<strong>Computer's turn</strong> — Thinking...`;
+        turnText.innerHTML = `<strong>Computer's turn</strong> — Calculating the most inconvenient wall...`;
       }
       cardPlayer?.classList.remove('active-player');
       cardComputer?.classList.add('active-player');
@@ -1128,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } else if (state === 'victory') {
       if (turnText) {
-        turnText.innerHTML = `🏆 <strong>Victory!</strong> You reached the opposite baseline and won!`;
+        turnText.innerHTML = `🏆 <strong>Victory!</strong> You crossed the board! Not even their pettiest walls could stop you.`;
       }
       cardPlayer?.classList.add('active-player');
       cardComputer?.classList.remove('active-player');
@@ -1142,7 +1142,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } else if (state === 'defeat') {
       if (turnText) {
-        turnText.innerHTML = `🏁 <strong>Game Over!</strong> Computer reached the baseline first.`;
+        turnText.innerHTML = `🧱 <strong>Game Over!</strong> Computer reached the baseline first. Not that wall again...`;
       }
       cardPlayer?.classList.remove('active-player');
       cardComputer?.classList.add('active-player');
